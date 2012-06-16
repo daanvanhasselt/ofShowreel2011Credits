@@ -1,0 +1,67 @@
+<Widget>
+    <Kind>4</Kind>
+    <Name>STRENGTH</Name>
+    <Value>-47</Value>
+</Widget>
+<Widget>
+    <Kind>4</Kind>
+    <Name>RADIUS</Name>
+    <Value>423.333</Value>
+</Widget>
+<Widget>
+    <Kind>4</Kind>
+    <Name>DAMP</Name>
+    <Value>0.730667</Value>
+</Widget>
+<Widget>
+    <Kind>4</Kind>
+    <Name>SPEED</Name>
+    <Value>5.345</Value>
+</Widget>
+<Widget>
+    <Kind>4</Kind>
+    <Name>FONTPATHSPACING</Name>
+    <Value>1</Value>
+</Widget>
+<Widget>
+    <Kind>4</Kind>
+    <Name>SIMPLIFYLINES</Name>
+    <Value>4.13333</Value>
+</Widget>
+<Widget>
+    <Kind>4</Kind>
+    <Name>ATTRDIST</Name>
+    <Value>7.65333</Value>
+</Widget>
+<Widget>
+    <Kind>4</Kind>
+    <Name>ABBERATION</Name>
+    <Value>0.022</Value>
+</Widget>
+<Widget>
+    <Kind>11</Kind>
+    <Name>NOISE1</Name>
+    <XValue>580.42</XValue>
+    <YValue>380.62</YValue>
+</Widget>
+<Widget>
+    <Kind>11</Kind>
+    <Name>NOISE2</Name>
+    <XValue>460.54</XValue>
+    <YValue>540.46</YValue>
+</Widget>
+<Widget>
+    <Kind>4</Kind>
+    <Name>NOISETIME</Name>
+    <Value>473.333</Value>
+</Widget>
+<Widget>
+    <Kind>2</Kind>
+    <Name>AUTOADVANCE</Name>
+    <Value>1</Value>
+</Widget>
+<Widget>
+    <Kind>4</Kind>
+    <Name>GLITCHAMOUNT</Name>
+    <Value>0</Value>
+</Widget>
