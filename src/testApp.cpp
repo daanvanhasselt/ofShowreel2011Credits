@@ -1,7 +1,7 @@
 #include "testApp.h"
 
 #define USE_KDTREE
-#define SAVE_FRAMES
+//#define SAVE_FRAMES
 
 #define FILE_NAME "authors"
 #define NUM_PARTICLES 50000
