@@ -23,31 +23,6 @@ void testApp::setup(){
     glEnable(GL_POINT_SMOOTH);
     ofEnableBlendMode(OF_BLENDMODE_ADD);
     
-    gui = new ofxUICanvas(0, 0, ofGetWidth(), ofGetHeight());
-    int w = 300;
-    int h = 40;
-
-    gui->addWidgetDown(new ofxUISlider(w, h, -50, 0, strength, "STRENGTH"));
-    gui->addWidgetDown(new ofxUISlider(w, h, 0, 1000, radius, "RADIUS"));
-    gui->addWidgetDown(new ofxUISlider(w, h, 0.2, 1.0, damp, "DAMP"));
-    gui->addWidgetDown(new ofxUISlider(w, h, 0.5, 10., speed, "SPEED"));
-    
-    gui->addWidgetEastOf(new ofxUISlider(w, h, 1, 100, fontPathSpacing, "FONTPATHSPACING"), "STRENGTH");
-    gui->addWidgetEastOf(new ofxUISlider(w, h, 0, 20, simplifyLines, "SIMPLIFYLINES"), "RADIUS");
-    gui->addWidgetEastOf(new ofxUISlider(w, h, 1, 500, minAttractionDistanceSq, "ATTRDIST"), "DAMP");
-    gui->addWidgetEastOf(new ofxUISlider(w, h, 0., .2, abberation, "ABBERATION"), "SPEED");
-    
-    gui->addWidgetEastOf(new ofxUI2DPad(100, 100, ofPoint(1, 1000), ofPoint(1, 1000),noiseCoords1, "NOISE1"), "FONTPATHSPACING");
-    gui->addWidgetEastOf(new ofxUI2DPad(100, 100, ofPoint(1, 1000), ofPoint(1, 1000), noiseCoords2, "NOISE2"), "NOISE1");
-    gui->addWidgetEastOf(new ofxUISlider(w, h, 0., 1000., noiseTime, "NOISETIME"), "ATTRDIST");  
-    gui->addWidgetEastOf(new ofxUIToggle(70, 70, autoAdvance, "AUTOADVANCE"), "ABBERATION");  
-    
-    gui->addWidgetEastOf(new ofxUISlider(w, h, 0., 100., glitchAmount, "GLITCHAMOUNT"), "NOISE2");  
-    
-    ofAddListener(gui->newGUIEvent, this, &testApp::guiEvent);
-    gui->loadSettings("GUI/settings.xml");
-    gui->setVisible(false);
-    
     font.loadFont("Sathu.ttf", TEXT_SIZE, true, false, true);
     
     for (int i = 0; i < NUM_PARTICLES; i++) {
@@ -73,6 +48,32 @@ void testApp::setup(){
     abberationShader.load("shaders/abberation");
     noiseShader.load("shaders/noise");
     glitchShader.load("shaders/glitch");
+    
+    // GUI
+    gui = new ofxUICanvas(0, 0, ofGetWidth(), ofGetHeight());
+    int w = 300;
+    int h = 40;
+    
+    gui->addWidgetDown(new ofxUISlider(w, h, -50, 0, strength, "STRENGTH"));
+    gui->addWidgetDown(new ofxUISlider(w, h, 0, 1000, radius, "RADIUS"));
+    gui->addWidgetDown(new ofxUISlider(w, h, 0.2, 1.0, damp, "DAMP"));
+    gui->addWidgetDown(new ofxUISlider(w, h, 0.5, 10., speed, "SPEED"));
+    
+    gui->addWidgetEastOf(new ofxUISlider(w, h, 1, 100, fontPathSpacing, "FONTPATHSPACING"), "STRENGTH");
+    gui->addWidgetEastOf(new ofxUISlider(w, h, 0, 20, simplifyLines, "SIMPLIFYLINES"), "RADIUS");
+    gui->addWidgetEastOf(new ofxUISlider(w, h, 1, 500, minAttractionDistanceSq, "ATTRDIST"), "DAMP");
+    gui->addWidgetEastOf(new ofxUISlider(w, h, 0., .2, abberation, "ABBERATION"), "SPEED");
+    
+    gui->addWidgetEastOf(new ofxUI2DPad(100, 100, ofPoint(1, 1000), ofPoint(1, 1000),noiseCoords1, "NOISE1"), "FONTPATHSPACING");
+    gui->addWidgetEastOf(new ofxUI2DPad(100, 100, ofPoint(1, 1000), ofPoint(1, 1000), noiseCoords2, "NOISE2"), "NOISE1");
+    gui->addWidgetEastOf(new ofxUISlider(w, h, 0., 1000., noiseTime, "NOISETIME"), "ATTRDIST");  
+    gui->addWidgetEastOf(new ofxUIToggle(70, 70, autoAdvance, "AUTOADVANCE"), "ABBERATION");  
+    
+    gui->addWidgetEastOf(new ofxUISlider(w, h, 0., 100., glitchAmount, "GLITCHAMOUNT"), "NOISE2");  
+    
+    ofAddListener(gui->newGUIEvent, this, &testApp::guiEvent);
+    gui->loadSettings("GUI/settings.xml");
+    gui->setVisible(false);
 }
 
 //--------------------------------------------------------------
@@ -138,7 +139,7 @@ void testApp::update(){
         particles[i]->update();
     }    
     
-    // generate noise texture
+    // generate noise texture (perlin noise on GPU)
     noiseFbo.begin();
     ofClear(0);
         noiseShader.begin();
@@ -185,6 +186,7 @@ void testApp::draw(){
     ofPushMatrix();
     ofTranslate(20, ofGetHeight() / 2.0 + TEXT_SIZE / 2.0);
     
+        // draw lines in between particles
         glBegin(GL_LINES);
         for (int i = 0; i < particles.size(); i += 1 + simplifyLines) {
             glColor4f(.9, .75, .6, .05);
@@ -218,10 +220,11 @@ void testApp::draw(){
         abberationShader.end();
     abberationFbo.end();
     
-    
+    // generate hard noise texture (1 px wide) to use for the glitches
     unsigned char *pixels = new unsigned char[ofGetHeight() * 3];
     for(int i = 0; i < ofGetHeight() * 3; ){
-        int numberOfRows = roundf(ofRandom(10, 100));
+        
+        int numberOfRows = roundf(ofRandom(10, 100));   // set the value for a 'block' of rows, so the displacement happens in bigger chunks
         int randomValue = roundf(ofRandom(255));
         
         for (int j = 0; j < numberOfRows * 3; j+=3) {
@@ -265,70 +268,70 @@ void testApp::keyPressed(int key){
 void testApp::next(){
     word = nextWord();
     
-    // create new list of attractors
+    // the attractors are points on the outlines of the letters
+    
+    // clear all the attractors
     for (int i = 0; i < attractors.size(); i++) {
         delete attractors[i];
     }
     attractors.clear();
     
-    vector <ofTTFCharacter> characters = font.getStringAsPoints(word);
+    vector <ofTTFCharacter> characters = font.getStringAsPoints(word);      // every letter as an ofTTFCharacter (== ofPath) in a vector
     for (int x = 0; x < characters.size(); x++) {
         ofTTFCharacter character = characters[x];
         
-        vector <ofPolyline> polylines = character.getOutline();
-        vector <Attractor *> attractorsForChar;
+        vector <ofPolyline> polylines = character.getOutline();             // get the outlines
+        vector <Attractor *> attractorsForChar;                             
         
         for (int i = 0; i < polylines.size(); i++) {
-            ofPolyline polyline = polylines[i].getResampledBySpacing(fontPathSpacing);
-            vector<ofPoint> vertices = polyline.getVertices();
+            ofPolyline polyline = polylines[i].getResampledBySpacing(fontPathSpacing);  // resample every outline for this character (so points are evenly distributed)
+            vector<ofPoint> vertices = polyline.getVertices();                          // and get all the vertices of the path
             for (int j = 0; j < vertices.size(); j++) {
-                if(!isnan(vertices[j].x)){
-                    Attractor *attr = new Attractor(vertices[j], strength, radius);
+                if(!isnan(vertices[j].x)){                                              // sometimes, vertex.x, y and z are all nan.. bug?
+                    Attractor *attr = new Attractor(vertices[j], strength, radius); 
                     attractors.push_back(attr);
                     attractorsForChar.push_back(attr);
                 }
             }
         }
         
-        // assign attractors to particles
-        vector <Attractor *> tmpAttractors = attractorsForChar;
+        // 'bind' attractors to particles
+        vector <Attractor *> tmpAttractors = attractorsForChar;         // copy all attractors for this char into a temporary vector
         int numberOfParticlesPerCharacter = ceilf(particles.size() / (float)characters.size());
         for (int i = numberOfParticlesPerCharacter * x; i < numberOfParticlesPerCharacter * (x + 1); i++) {
-            if(i >= particles.size())
+            if(i >= particles.size())   // check for boundries, because we're rounding the index it might be too high
                 break;
             
 #ifdef USE_KDTREE            
-            tree->clear();
-            if(tmpAttractors.size() == 0)
-                tmpAttractors = attractorsForChar;
+            tree->clear();                              // update our kd-tree (it would be better if we could do tree->setVertex(...) but we can't)
             for (int j = 0; j < tmpAttractors.size(); j++) {
-                tree->insert(tmpAttractors[j]->pos);
+                tree->insert(tmpAttractors[j]->pos);    // so we clear and re-insert attractors
             }
             
             ofPoint *nearest = tree->getNearest(particles[i]->pos);
-            for (int j = 0; j < tmpAttractors.size(); j++) {
+            for (int j = 0; j < tmpAttractors.size(); j++) {        // we have the nearest position, but we have to get the nearest attractor
                 if(tmpAttractors[j]->pos == *nearest){
                     particles[i]->attractor = tmpAttractors[j];
-                    tmpAttractors.erase(tmpAttractors.begin() + j);
+                    tmpAttractors.erase(tmpAttractors.begin() + j);     // and we want to prevent duplicate-bindings
                     break;
                 }
             }
             
-#else
-            if(tmpAttractors.size() == 0)
-                tmpAttractors = attractorsForChar;
-            
-            int random = floorf(ofRandom(tmpAttractors.size()));
+#else            
+            int random = floorf(ofRandom(tmpAttractors.size()));       // bind to a random attractor
             particles[i]->attractor = tmpAttractors[random];
             tmpAttractors.erase(tmpAttractors.begin() + random);            
-#endif           
+#endif                       
+
+            if(tmpAttractors.size() == 0)                   // we are out of attractors, but there may be particles left to bind to attractors so we want to refill the tmpAttractors
+                tmpAttractors = attractorsForChar;
             
         }
     }
 }
 
 //--------------------------------------------------------------
-string testApp::nextWord(){
+string testApp::nextWord(){     // read the next line from the file
     if(buffer.isLastLine())
         buffer.resetLineReader();
     return buffer.getNextLine();
