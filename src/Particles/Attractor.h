@@ -15,4 +15,5 @@ public:
     float radius;
     float radiusSquared;
     float minAttractionDistanceSq;
+    float minSpeedSquared;
 };

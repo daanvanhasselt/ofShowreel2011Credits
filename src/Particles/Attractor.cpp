@@ -18,9 +18,9 @@ void Attractor::attract(vector<Particle *>particles){
 //--------------------------------------------------------------
 void Attractor::attract(Particle *particle){
     float distanceSquared = pos.distanceSquared(particle->pos);
-    if(distanceSquared > minAttractionDistanceSq){
+    if(distanceSquared > minAttractionDistanceSq && particle->vel.lengthSquared() < minSpeedSquared){
         float s = distanceSquared / (radiusSquared / 3.) + 0.05;
-        float f = pow((double)s, 0.5);
+        float f = pow(3.0 * (double)s, 0.3);
         f = f / radius;
         f /= 0.5;
         f *= strength;

@@ -1,7 +1,7 @@
 #include "testApp.h"
 
 #define USE_KDTREE
-//#define SAVE_FRAMES
+#define SAVE_FRAMES
 
 #define FILE_NAME "authors"
 #define NUM_PARTICLES 50000
@@ -61,19 +61,26 @@ void testApp::setup(){
     
     gui->addWidgetEastOf(new ofxUISlider(w, h, 1, 100, fontPathSpacing, "FONTPATHSPACING"), "STRENGTH");
     gui->addWidgetEastOf(new ofxUISlider(w, h, 0, 20, simplifyLines, "SIMPLIFYLINES"), "RADIUS");
-    gui->addWidgetEastOf(new ofxUISlider(w, h, 1, 500, minAttractionDistanceSq, "ATTRDIST"), "DAMP");
+    gui->addWidgetEastOf(new ofxUISlider(w, h, 1, 500, minAttractionDistanceSq, "MINATTRDIST"), "DAMP");
     gui->addWidgetEastOf(new ofxUISlider(w, h, 0., .2, abberation, "ABBERATION"), "SPEED");
     
     gui->addWidgetEastOf(new ofxUI2DPad(100, 100, ofPoint(1, 1000), ofPoint(1, 1000),noiseCoords1, "NOISE1"), "FONTPATHSPACING");
     gui->addWidgetEastOf(new ofxUI2DPad(100, 100, ofPoint(1, 1000), ofPoint(1, 1000), noiseCoords2, "NOISE2"), "NOISE1");
-    gui->addWidgetEastOf(new ofxUISlider(w, h, 0., 1000., noiseTime, "NOISETIME"), "ATTRDIST");  
+    gui->addWidgetEastOf(new ofxUISlider(w, h, 0., 1000., noiseTime, "NOISETIME"), "MINATTRDIST");  
     gui->addWidgetEastOf(new ofxUIToggle(70, 70, autoAdvance, "AUTOADVANCE"), "ABBERATION");  
     
     gui->addWidgetEastOf(new ofxUISlider(w, h, 0., 100., glitchAmount, "GLITCHAMOUNT"), "NOISE2");  
+    gui->addWidgetEastOf(new ofxUISlider(w, h, 1, 500, minSpeedSq, "MINSPEED"), "NOISETIME");
+    gui->addWidgetEastOf(new ofxUISlider(w, h, 0, 0.5, speedIncrementPerLetter, "SPEEDINCR"), "AUTOADVANCE");
+    
+    gui->addWidgetEastOf(new ofxUISlider(w, h, 0, 0.05, dampSpeed, "DAMPSPEED"), "GLITCHAMOUNT");
     
     ofAddListener(gui->newGUIEvent, this, &testApp::guiEvent);
     gui->loadSettings("GUI/settings.xml");
     gui->setVisible(false);
+    
+    word = "";
+    dampSpeedIncrement = 0;
 }
 
 //--------------------------------------------------------------
@@ -97,7 +104,7 @@ void testApp::guiEvent(ofxUIEventArgs &e){
     else if(name == "SIMPLIFYLINES"){
         simplifyLines = roundf(((ofxUISlider *) e.widget)->getScaledValue());
     }
-    else if(name == "ATTRDIST"){
+    else if(name == "MINATTRDIST"){
         minAttractionDistanceSq = ((ofxUISlider *) e.widget)->getScaledValue();
     }
     else if(name == "ABBERATION"){
@@ -118,6 +125,16 @@ void testApp::guiEvent(ofxUIEventArgs &e){
     else if(name == "GLITCHAMOUNT"){
 		glitchAmount = ((ofxUISlider *) e.widget)->getScaledValue();
     }
+    else if(name == "MINSPEED"){
+		minSpeedSq = ((ofxUISlider *) e.widget)->getScaledValue();
+    }
+    else if(name == "SPEEDINCR"){
+		speedIncrementPerLetter = ((ofxUISlider *) e.widget)->getScaledValue();
+    }
+    else if(name == "DAMPSPEED"){
+		dampSpeed = ((ofxUISlider *) e.widget)->getScaledValue();
+    }
+    
 }
 
 //--------------------------------------------------------------
@@ -131,11 +148,12 @@ void testApp::update(){
         attractors[i]->strength = strength;
         attractors[i]->radius = radius;
         attractors[i]->minAttractionDistanceSq = minAttractionDistanceSq;
+        attractors[i]->minSpeedSquared = minSpeedSq;
     }
     
     for (int i = 0; i < particles.size(); i++) {
         particles[i]->damp = damp;
-        particles[i]->speed = speed;
+        particles[i]->speed = speed + (speedIncrementPerLetter *  fabs((float)lastWord.length() - (float)word.length()) * dampSpeedIncrement);
         particles[i]->update();
     }    
     
@@ -171,8 +189,11 @@ void testApp::update(){
         noiseShader.end();
     noiseFbo.end();
     
-    if(autoAdvance && ofGetFrameNum() % 120 == 0)
+    if(autoAdvance && ofGetFrameNum() % 200 == 0)
         next();
+    
+    if(dampSpeedIncrement > 0)
+        dampSpeedIncrement -= dampSpeed;
 }
 
 //--------------------------------------------------------------
@@ -251,7 +272,7 @@ void testApp::draw(){
 
     
 #ifdef SAVE_FRAMES
-    ofSaveFrame();
+    ofSaveScreen("frames/" + ofToString(ofGetFrameNum(), 0) + ".bmp");
 #endif
 }
 
@@ -266,7 +287,9 @@ void testApp::keyPressed(int key){
 
 //--------------------------------------------------------------
 void testApp::next(){
+    lastWord = word;
     word = nextWord();
+    dampSpeedIncrement = 1;
     
     // the attractors are points on the outlines of the letters
     
@@ -334,5 +357,10 @@ void testApp::next(){
 string testApp::nextWord(){     // read the next line from the file
     if(buffer.isLastLine())
         buffer.resetLineReader();
+//    static int c = 0;
+//    if(c % 2 == 0)
+//        buffer.resetLineReader();
+//    c++;
+    
     return buffer.getNextLine();
 }

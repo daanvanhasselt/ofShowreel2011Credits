@@ -16,6 +16,7 @@ public:
     void next();
     
     ofTrueTypeFont font;
+    string lastWord;
     string word;
     string nextWord();
     
@@ -29,6 +30,10 @@ public:
     float fontPathSpacing;
     int simplifyLines;
     float minAttractionDistanceSq;
+    float minSpeedSq;
+    float speedIncrementPerLetter;
+    float dampSpeed;
+    float dampSpeedIncrement;
     
     ofxUICanvas *gui;
     void guiEvent(ofxUIEventArgs &e);
