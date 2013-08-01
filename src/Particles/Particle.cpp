@@ -16,7 +16,7 @@ void Particle::update(){
     }
     vel += acc;
     vel *= damp;
-    acc = 0;
+    acc.set(0);
     pos += vel * speed;
 }
 
